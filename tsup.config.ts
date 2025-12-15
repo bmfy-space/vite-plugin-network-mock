@@ -8,6 +8,7 @@ export default defineConfig({
   clean: true,
   splitting: false,
   sourcemap: true,
+  external: ['vite'],
   onSuccess: async () => {
     copyFileSync('src/panel.html', 'dist/panel.html')
   }
