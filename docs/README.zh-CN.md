@@ -2,7 +2,15 @@
 
 一个用于监控网络请求并提供内置 Mock 功能的 Vite 插件。提供可视化面板，在开发过程中实时检查 API 请求并动态创建 Mock 规则。
 
-[English](./README.md)
+[English](../README.md)
+
+## 截图预览
+
+### 网络监控面板
+![网络监控](./images/network.png)
+
+### Mock 规则管理
+![Mock 规则](./images/rules.png)
 
 ## 特性
 

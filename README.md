@@ -2,7 +2,15 @@
 
 A Vite plugin for monitoring network requests with built-in mock capabilities. Provides a visual panel to inspect API requests and create mock rules on-the-fly during development.
 
-[中文文档](./README.zh-CN.md)
+[中文文档](./docs/README.zh-CN.md)
+
+## Screenshots
+
+### Network Monitor Panel
+![Network Monitor](./docs/images/network.png)
+
+### Mock Rules Management
+![Mock Rules](./docs/images/rules.png)
 
 ## Features
 
