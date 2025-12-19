@@ -1,8 +1,27 @@
 <script setup lang="ts">
 import { ref, reactive, inject, watch } from 'vue'
+import { Codemirror } from 'vue-codemirror'
+import { json } from '@codemirror/lang-json'
+import { oneDark } from '@codemirror/theme-one-dark'
 import { useRuleModal } from '../composables/useRuleModal'
 
 const { visible, isEdit, form, close } = useRuleModal()
+
+// CodeMirror 配置
+const extensions = [json(), oneDark]
+
+// 全屏状态
+const isFullscreen = ref(false)
+const fullscreenTab = ref<'body' | 'headers'>('body')
+
+function toggleFullscreen(tab: 'body' | 'headers') {
+  fullscreenTab.value = tab
+  isFullscreen.value = !isFullscreen.value
+}
+
+function closeFullscreen() {
+  isFullscreen.value = false
+}
 const ws = inject<any>('ws')
 const activeBodyTab = ref('body')
 
@@ -147,18 +166,63 @@ function save() {
         </div>
         <div class="form-group">
           <div class="tab-bar">
-            <button class="tab-btn" :class="{ active: activeBodyTab === 'body', 'tab-error': errors.response }" @click="activeBodyTab = 'body'">Response Body</button>
-            <button class="tab-btn" :class="{ active: activeBodyTab === 'headers', 'tab-error': errors.headers }" @click="activeBodyTab = 'headers'">Headers</button>
+            <div class="tab-left">
+              <button class="tab-btn" :class="{ active: activeBodyTab === 'body', 'tab-error': errors.response }" @click="activeBodyTab = 'body'">Response Body</button>
+              <button class="tab-btn" :class="{ active: activeBodyTab === 'headers', 'tab-error': errors.headers }" @click="activeBodyTab = 'headers'">Headers</button>
+            </div>
+            <button class="fullscreen-btn" @click="toggleFullscreen(activeBodyTab as 'body' | 'headers')">Fullscreen</button>
           </div>
-          <textarea v-show="activeBodyTab === 'body'" class="form-textarea" :class="{ 'has-error': errors.response }" v-model="form.response" placeholder='{"code": 200, "data": {}}'></textarea>
+          <div v-show="activeBodyTab === 'body'" class="editor-wrapper" :class="{ 'has-error': errors.response }">
+            <Codemirror
+              v-model="form.response"
+              :extensions="extensions"
+              :style="{ height: '240px' }"
+              placeholder='{"code": 200, "data": {}}'
+            />
+          </div>
           <span v-if="errors.response && activeBodyTab === 'body'" class="form-error">{{ errors.response }}</span>
-          <textarea v-show="activeBodyTab === 'headers'" class="form-textarea" :class="{ 'has-error': errors.headers }" v-model="form.headers" placeholder='{"Content-Type": "application/json"}'></textarea>
+          <div v-show="activeBodyTab === 'headers'" class="editor-wrapper" :class="{ 'has-error': errors.headers }">
+            <Codemirror
+              v-model="form.headers"
+              :extensions="extensions"
+              :style="{ height: '240px' }"
+              placeholder='{"Content-Type": "application/json"}'
+            />
+          </div>
           <span v-if="errors.headers && activeBodyTab === 'headers'" class="form-error">{{ errors.headers }}</span>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" @click="close">Cancel</button>
         <button class="btn btn-primary" @click="save">Save Rule</button>
+      </div>
+    </div>
+
+    <!-- 全屏编辑器 -->
+    <div v-if="isFullscreen" class="fullscreen-editor">
+      <div class="fullscreen-header">
+        <span class="fullscreen-title">{{ fullscreenTab === 'body' ? 'Response Body' : 'Headers' }}</span>
+        <button class="fullscreen-close" @click="closeFullscreen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="fullscreen-body">
+        <Codemirror
+          v-if="fullscreenTab === 'body'"
+          v-model="form.response"
+          :extensions="extensions"
+          :style="{ height: '100%' }"
+          placeholder='{"code": 200, "data": {}}'
+        />
+        <Codemirror
+          v-else
+          v-model="form.headers"
+          :extensions="extensions"
+          :style="{ height: '100%' }"
+          placeholder='{"Content-Type": "application/json"}'
+        />
       </div>
     </div>
   </div>
@@ -220,24 +284,90 @@ function save() {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
-.form-textarea {
-  width: 100%;
-  min-height: 180px;
-  padding: 12px;
+.editor-wrapper {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-family: 'SF Mono', Monaco, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-  outline: none;
+  overflow: hidden;
 }
-.form-textarea:focus {
+.editor-wrapper:focus-within {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
+.editor-wrapper.has-error {
+  border-color: #ef4444;
+}
+.editor-wrapper.has-error:focus-within {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+.editor-wrapper :deep(.cm-editor) {
+  font-size: 13px;
+}
+.editor-wrapper :deep(.cm-scroller) {
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.fullscreen-btn {
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+.fullscreen-btn:hover {
+  background: var(--bg);
+  color: var(--primary);
+}
+.fullscreen-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #282c34;
+  display: flex;
+  flex-direction: column;
+}
+.fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #21252b;
+  border-bottom: 1px solid #181a1f;
+}
+.fullscreen-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #abb2bf;
+}
+.fullscreen-close {
+  padding: 4px;
+  border: none;
+  background: none;
+  color: #abb2bf;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+.fullscreen-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.fullscreen-body {
+  flex: 1;
+  overflow: hidden;
+}
+.fullscreen-body :deep(.cm-editor) {
+  height: 100%;
+  font-size: 14px;
+}
+.fullscreen-body :deep(.cm-scroller) {
+  font-family: 'SF Mono', Monaco, monospace;
+}
 .form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.tab-bar { display: flex; gap: 4px; margin-bottom: 8px; }
+.tab-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.tab-left { display: flex; gap: 4px; }
 .tab-btn {
   padding: 6px 14px;
   border: none;
@@ -253,10 +383,10 @@ function save() {
 .tab-btn.active { background: var(--primary); color: white; }
 .tab-btn.tab-error { color: #ef4444; }
 .tab-btn.tab-error.active { background: #ef4444; color: white; }
-.form-input.has-error, .form-textarea.has-error {
+.form-input.has-error {
   border-color: #ef4444;
 }
-.form-input.has-error:focus, .form-textarea.has-error:focus {
+.form-input.has-error:focus {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
