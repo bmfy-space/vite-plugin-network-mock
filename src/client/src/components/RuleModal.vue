@@ -1,17 +1,94 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { ref, reactive, inject, watch } from 'vue'
 import { useRuleModal } from '../composables/useRuleModal'
 
 const { visible, isEdit, form, close } = useRuleModal()
 const ws = inject<any>('ws')
 const activeBodyTab = ref('body')
 
+// 表单校验错误信息
+const errors = reactive({
+  url: '',
+  status: '',
+  delay: '',
+  response: '',
+  headers: ''
+})
+
+// 清除所有错误
+function clearErrors() {
+  errors.url = ''
+  errors.status = ''
+  errors.delay = ''
+  errors.response = ''
+  errors.headers = ''
+}
+
+// 监听弹窗打开，清除错误状态
+watch(visible, (val) => {
+  if (val) {
+    clearErrors()
+    activeBodyTab.value = 'body'
+  }
+})
+
+// 校验表单
+function validate(): boolean {
+  clearErrors()
+  let isValid = true
+
+  // URL Pattern 必填
+  if (!form.url.trim()) {
+    errors.url = 'URL Pattern 不能为空'
+    isValid = false
+  }
+
+  // Status 校验 (100-599)
+  if (!form.status || form.status < 100 || form.status > 599) {
+    errors.status = '状态码必须在 100-599 之间'
+    isValid = false
+  }
+
+  // Delay 校验 (非负数)
+  if (form.delay < 0) {
+    errors.delay = '延迟时间不能为负数'
+    isValid = false
+  }
+
+  // Response Body JSON 校验
+  try {
+    if (form.response.trim()) {
+      JSON.parse(form.response.trim())
+    }
+  } catch {
+    errors.response = 'Response Body 必须是有效的 JSON 格式'
+    isValid = false
+    activeBodyTab.value = 'body'
+  }
+
+  // Headers JSON 校验
+  try {
+    if (form.headers.trim()) {
+      JSON.parse(form.headers.trim())
+    }
+  } catch {
+    errors.headers = 'Headers 必须是有效的 JSON 格式'
+    isValid = false
+    if (!errors.response) {
+      activeBodyTab.value = 'headers'
+    }
+  }
+
+  return isValid
+}
+
 function save() {
-  let response, headers
-  try { response = JSON.parse(form.response.trim() || '{}') }
-  catch { alert('Invalid JSON in response body'); return }
-  try { headers = JSON.parse(form.headers.trim() || '{}') }
-  catch { alert('Invalid JSON in headers'); return }
+  if (!validate()) {
+    return
+  }
+
+  const response = JSON.parse(form.response.trim() || '{}')
+  const headers = JSON.parse(form.headers.trim() || '{}')
 
   const rule = {
     id: form.id || Date.now().toString(36) + Math.random().toString(36).substring(2),
@@ -43,7 +120,8 @@ function save() {
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">URL Pattern</label>
-          <input type="text" class="form-input" v-model="form.url" placeholder="/api/users">
+          <input type="text" class="form-input" :class="{ 'has-error': errors.url }" v-model="form.url" placeholder="/api/users">
+          <span v-if="errors.url" class="form-error">{{ errors.url }}</span>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -58,20 +136,24 @@ function save() {
           </div>
           <div class="form-group">
             <label class="form-label">Status</label>
-            <input type="number" class="form-input" v-model.number="form.status">
+            <input type="number" class="form-input" :class="{ 'has-error': errors.status }" v-model.number="form.status">
+            <span v-if="errors.status" class="form-error">{{ errors.status }}</span>
           </div>
           <div class="form-group">
             <label class="form-label">Delay (ms)</label>
-            <input type="number" class="form-input" v-model.number="form.delay">
+            <input type="number" class="form-input" :class="{ 'has-error': errors.delay }" v-model.number="form.delay">
+            <span v-if="errors.delay" class="form-error">{{ errors.delay }}</span>
           </div>
         </div>
         <div class="form-group">
           <div class="tab-bar">
-            <button class="tab-btn" :class="{ active: activeBodyTab === 'body' }" @click="activeBodyTab = 'body'">Response Body</button>
-            <button class="tab-btn" :class="{ active: activeBodyTab === 'headers' }" @click="activeBodyTab = 'headers'">Headers</button>
+            <button class="tab-btn" :class="{ active: activeBodyTab === 'body', 'tab-error': errors.response }" @click="activeBodyTab = 'body'">Response Body</button>
+            <button class="tab-btn" :class="{ active: activeBodyTab === 'headers', 'tab-error': errors.headers }" @click="activeBodyTab = 'headers'">Headers</button>
           </div>
-          <textarea v-show="activeBodyTab === 'body'" class="form-textarea" v-model="form.response" placeholder='{"code": 200, "data": {}}'></textarea>
-          <textarea v-show="activeBodyTab === 'headers'" class="form-textarea" v-model="form.headers" placeholder='{"Content-Type": "application/json"}'></textarea>
+          <textarea v-show="activeBodyTab === 'body'" class="form-textarea" :class="{ 'has-error': errors.response }" v-model="form.response" placeholder='{"code": 200, "data": {}}'></textarea>
+          <span v-if="errors.response && activeBodyTab === 'body'" class="form-error">{{ errors.response }}</span>
+          <textarea v-show="activeBodyTab === 'headers'" class="form-textarea" :class="{ 'has-error': errors.headers }" v-model="form.headers" placeholder='{"Content-Type": "application/json"}'></textarea>
+          <span v-if="errors.headers && activeBodyTab === 'headers'" class="form-error">{{ errors.headers }}</span>
         </div>
       </div>
       <div class="modal-footer">
@@ -169,4 +251,19 @@ function save() {
 }
 .tab-btn:hover { background: var(--bg); }
 .tab-btn.active { background: var(--primary); color: white; }
+.tab-btn.tab-error { color: #ef4444; }
+.tab-btn.tab-error.active { background: #ef4444; color: white; }
+.form-input.has-error, .form-textarea.has-error {
+  border-color: #ef4444;
+}
+.form-input.has-error:focus, .form-textarea.has-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+.form-error {
+  display: block;
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 4px;
+}
 </style>
