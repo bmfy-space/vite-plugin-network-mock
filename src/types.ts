@@ -5,6 +5,7 @@ export interface MockRule {
   status: number
   delay: number
   response: any
+  headers?: Record<string, string>
   enabled: boolean
   createdAt: number
 }

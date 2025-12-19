@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite'
 import type { IncomingMessage, ServerResponse } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
+import Mock from 'mockjs'
 import { MockStore } from './store'
 import type { PluginOptions, NetworkLog, MockRule } from './types'
 import { generatePanelHTML } from './panel'
@@ -134,6 +135,9 @@ export default function networkMockPlugin(options: PluginOptions = {}): Plugin {
             await new Promise(resolve => setTimeout(resolve, matchedRule.delay))
           }
 
+          // 使用 Mock.js 生成响应数据
+          const responseData = generateMockResponse(matchedRule.response)
+
           const log: NetworkLog = {
             id: generateId(),
             url,
@@ -141,7 +145,7 @@ export default function networkMockPlugin(options: PluginOptions = {}): Plugin {
             status: matchedRule.status,
             duration: Date.now() - startTime,
             timestamp: new Date().toLocaleTimeString(),
-            responseBody: matchedRule.response,
+            responseBody: responseData,
             isMocked: true
           }
 
@@ -151,7 +155,13 @@ export default function networkMockPlugin(options: PluginOptions = {}): Plugin {
           res.statusCode = matchedRule.status
           res.setHeader('Content-Type', 'application/json')
           res.setHeader('X-Mock-Response', 'true')
-          res.end(JSON.stringify(matchedRule.response))
+          // 设置自定义响应头
+          if (matchedRule.headers) {
+            Object.entries(matchedRule.headers).forEach(([key, value]) => {
+              res.setHeader(key, value as string)
+            })
+          }
+          res.end(JSON.stringify(responseData))
           return
         }
 
@@ -203,4 +213,17 @@ export default function networkMockPlugin(options: PluginOptions = {}): Plugin {
 
 function tryParseJSON(str: string): any {
   try { return JSON.parse(str) } catch { return str }
+}
+
+/**
+ * 使用 Mock.js 生成响应数据
+ * 支持 Mock.js 的所有语法，如 @name, @id, @email 等
+ */
+function generateMockResponse(template: any): any {
+  try {
+    return Mock.mock(template)
+  } catch (e) {
+    console.warn('[network-mock] Mock.js generation failed:', e)
+    return template
+  }
 }

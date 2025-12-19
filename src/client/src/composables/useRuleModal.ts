@@ -3,6 +3,7 @@ import type { MockRule, NetworkLog } from '../types'
 
 const visible = ref(false)
 const isEdit = ref(false)
+const viewOnly = ref(false)
 
 const form = reactive({
   id: '',
@@ -19,6 +20,7 @@ const form = reactive({
 export function useRuleModal() {
   function openAdd() {
     isEdit.value = false
+    viewOnly.value = false
     Object.assign(form, {
       id: '', url: '', method: 'GET', status: 200, delay: 0,
       response: '', headers: '', enabled: true, createdAt: 0
@@ -28,6 +30,18 @@ export function useRuleModal() {
 
   function openEdit(rule: MockRule) {
     isEdit.value = true
+    viewOnly.value = false
+    Object.assign(form, {
+      ...rule,
+      response: typeof rule.response === 'object' ? JSON.stringify(rule.response, null, 2) : (rule.response || ''),
+      headers: rule.headers ? JSON.stringify(rule.headers, null, 2) : ''
+    })
+    visible.value = true
+  }
+
+  function openView(rule: MockRule) {
+    isEdit.value = false
+    viewOnly.value = true
     Object.assign(form, {
       ...rule,
       response: typeof rule.response === 'object' ? JSON.stringify(rule.response, null, 2) : (rule.response || ''),
@@ -38,6 +52,7 @@ export function useRuleModal() {
 
   function openFromLog(log: NetworkLog) {
     isEdit.value = false
+    viewOnly.value = false
     Object.assign(form, {
       id: '',
       url: log.url,
@@ -56,5 +71,5 @@ export function useRuleModal() {
     visible.value = false
   }
 
-  return { visible, isEdit, form, openAdd, openEdit, openFromLog, close }
+  return { visible, isEdit, viewOnly, form, openAdd, openEdit, openView, openFromLog, close }
 }

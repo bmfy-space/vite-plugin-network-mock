@@ -10,7 +10,7 @@ interface WsContext {
 }
 
 const ws = inject<WsContext>('ws')!
-const { openAdd, openEdit } = useRuleModal()
+const { openAdd, openEdit, openView } = useRuleModal()
 
 const search = ref('')
 const methodFilter = ref('')
@@ -69,8 +69,14 @@ function handleDelete(id: string) {
           <span class="toggle-track"></span>
           <span class="toggle-thumb"></span>
         </label>
-        <button class="btn btn-ghost btn-sm" @click="openEdit(rule)">Edit</button>
-        <button class="btn btn-ghost btn-sm btn-danger" @click="handleDelete(rule.id)">Delete</button>
+        <button class="btn btn-ghost btn-sm" @click="openView(rule)" title="View">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="openEdit(rule)" title="Edit">Edit</button>
+        <button class="btn btn-ghost btn-sm btn-danger" @click="handleDelete(rule.id)" title="Delete">Delete</button>
       </div>
     </div>
   </div>
