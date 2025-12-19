@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsup'
-import { copyFileSync } from 'fs'
+import { copyFileSync, existsSync } from 'fs'
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -10,6 +10,9 @@ export default defineConfig({
   sourcemap: true,
   external: ['vite'],
   onSuccess: async () => {
-    copyFileSync('src/panel.html', 'dist/panel.html')
+    // 复制 Vue3 构建产物
+    if (existsSync('src/index.html')) {
+      copyFileSync('src/index.html', 'dist/index.html')
+    }
   }
 })

@@ -14,8 +14,10 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
+    "build": "pnpm build:client && tsup",
+    "build:client": "cd src/client && pnpm install && pnpm build",
+    "dev": "tsup --watch",
+    "dev:client": "cd src/client && pnpm dev"
   },
   "keywords": ["vite", "vite-plugin", "network", "mock"],
   "license": "MIT",
