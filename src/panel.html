@@ -698,7 +698,7 @@
               <span>${log.duration}ms</span>
               <span>${log.timestamp}</span>
             </div>
-            <div class="item-detail">
+            <div class="item-detail" onclick="event.stopPropagation()">
               ${log.requestBody ? `<div class="detail-section"><div class="detail-label">Request Body</div><div class="detail-content">${formatJSON(log.requestBody)}</div></div>` : ''}
               <div class="detail-section"><div class="detail-label">Response Body</div><div class="detail-content">${formatJSON(log.responseBody)}</div></div>
             </div>
