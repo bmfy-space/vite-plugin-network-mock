@@ -2,6 +2,7 @@
 import { ref, computed, inject, type Ref } from 'vue'
 import type { MockRule } from '../types'
 import { useRuleModal } from '../composables/useRuleModal'
+import { SearchBox, MethodSelect, MethodBadge, ToggleSwitch } from './common'
 
 interface WsContext {
   rules: Ref<MockRule[]>
@@ -26,24 +27,17 @@ const filteredRules = computed(() => {
 function handleDelete(id: string) {
   if (confirm('Delete this rule?')) ws.deleteRule(id)
 }
+
+function handleToggle(rule: MockRule) {
+  ws.toggleRule(rule.id)
+}
 </script>
 
 <template>
   <div class="panel">
     <div class="toolbar">
-      <div class="search-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="text" class="search-input" v-model="search" placeholder="Search URL...">
-      </div>
-      <select class="select" v-model="methodFilter">
-        <option value="">All Methods</option>
-        <option value="GET">GET</option>
-        <option value="POST">POST</option>
-        <option value="PUT">PUT</option>
-        <option value="DELETE">DELETE</option>
-      </select>
+      <SearchBox v-model="search" placeholder="Search URL..." />
+      <MethodSelect v-model="methodFilter" show-all />
       <button class="btn btn-primary" @click="openAdd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 5v14M5 12h14"/>
@@ -59,22 +53,13 @@ function handleDelete(id: string) {
         <div>No mock rules yet</div>
       </div>
       <div v-for="rule in filteredRules" :key="rule.id" class="rule-item">
-        <span class="method-badge" :class="rule.method">{{ rule.method }}</span>
+        <MethodBadge :method="rule.method" />
         <div class="rule-info">
           <div class="rule-url">{{ rule.url }}</div>
           <div class="rule-meta">Status: {{ rule.status }} · Delay: {{ rule.delay }}ms</div>
         </div>
-        <label class="toggle" @click.stop>
-          <input type="checkbox" :checked="rule.enabled" @change="ws.toggleRule(rule.id)">
-          <span class="toggle-track"></span>
-          <span class="toggle-thumb"></span>
-        </label>
-        <button class="btn btn-ghost btn-sm" @click="openView(rule)" title="View">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </button>
+        <ToggleSwitch :model-value="rule.enabled" @update:model-value="handleToggle(rule)" />
+        <button class="btn btn-ghost btn-sm" @click="openView(rule)">View</button>
         <button class="btn btn-ghost btn-sm" @click="openEdit(rule)" title="Edit">Edit</button>
         <button class="btn btn-ghost btn-sm btn-danger" @click="handleDelete(rule.id)" title="Delete">Delete</button>
       </div>
@@ -91,41 +76,15 @@ function handleDelete(id: string) {
   flex-wrap: wrap;
   align-items: center;
 }
-.search-box { flex: 1; min-width: 200px; position: relative; }
-.search-box svg {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: var(--text-muted);
-}
-.search-input { width: 100%; padding-left: 38px; }
-.select {
-  padding: 9px 32px 9px 12px;
-  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
-  appearance: none;
-  cursor: pointer;
-}
 .list {
   padding: 8px;
   max-height: calc(100vh - 200px);
   overflow-y: auto;
 }
-.list::-webkit-scrollbar {
-  width: 6px;
-}
-.list::-webkit-scrollbar-track {
-  background: transparent;
-}
-.list::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-.list::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
+.list::-webkit-scrollbar { width: 6px; }
+.list::-webkit-scrollbar-track { background: transparent; }
+.list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.list::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 .rule-item {
   display: flex;
   align-items: center;
@@ -138,26 +97,4 @@ function handleDelete(id: string) {
 .rule-info { flex: 1; }
 .rule-url { font-family: 'SF Mono', Monaco, monospace; font-size: 13px; font-weight: 500; }
 .rule-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-.toggle { position: relative; width: 40px; height: 22px; cursor: pointer; }
-.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-track {
-  position: absolute;
-  inset: 0;
-  background: #cbd5e1;
-  border-radius: 11px;
-  transition: background 0.2s;
-}
-.toggle-thumb {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  left: 2px;
-  top: 2px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-.toggle input:checked + .toggle-track { background: var(--primary); }
-.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
 </style>

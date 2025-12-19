@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, inject, type Ref } from 'vue'
 import type { NetworkLog, MockRule } from '../types'
-import { formatJSON } from '../utils/json'
+import { stringifyJSON } from '../utils/json'
 import { useRuleModal } from '../composables/useRuleModal'
+import { SearchBox, MethodSelect, MethodBadge, CodeEditor } from './common'
 
 interface WsContext {
   rules: Ref<MockRule[]>
@@ -53,19 +54,8 @@ function toggleExpand(id: string) {
 <template>
   <div class="panel">
     <div class="toolbar">
-      <div class="search-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="text" class="search-input" v-model="search" placeholder="Search URL...">
-      </div>
-      <select class="select" v-model="methodFilter">
-        <option value="">All Methods</option>
-        <option value="GET">GET</option>
-        <option value="POST">POST</option>
-        <option value="PUT">PUT</option>
-        <option value="DELETE">DELETE</option>
-      </select>
+      <SearchBox v-model="search" placeholder="Search URL..." />
+      <MethodSelect v-model="methodFilter" show-all />
       <select class="select" v-model="mockFilter">
         <option value="">All Status</option>
         <option value="mocked">Mocked</option>
@@ -94,7 +84,7 @@ function toggleExpand(id: string) {
       >
         <div class="item-header">
           <span class="status-code" :class="log.status >= 200 && log.status < 300 ? 'success' : 'error'">{{ log.status }}</span>
-          <span class="method-badge" :class="log.method">{{ log.method }}</span>
+          <MethodBadge :method="log.method" />
           <span class="item-url">{{ log.url }}</span>
           <span class="tag" :class="log.isMocked ? 'tag-mock' : 'tag-real'">{{ log.isMocked ? 'MOCK' : 'REAL' }}</span>
           <div class="item-actions" @click.stop>
@@ -109,11 +99,11 @@ function toggleExpand(id: string) {
         <div class="item-detail" @click.stop>
           <div v-if="log.requestBody" class="detail-section">
             <div class="detail-label">Request Body</div>
-            <div class="detail-content" v-html="formatJSON(log.requestBody)"></div>
+            <CodeEditor :model-value="stringifyJSON(log.requestBody)" height="200px" disabled />
           </div>
           <div class="detail-section">
             <div class="detail-label">Response Body</div>
-            <div class="detail-content" v-html="formatJSON(log.responseBody)"></div>
+            <CodeEditor :model-value="stringifyJSON(log.responseBody)" height="280px" disabled />
           </div>
         </div>
       </div>
@@ -130,41 +120,26 @@ function toggleExpand(id: string) {
   flex-wrap: wrap;
   align-items: center;
 }
-.search-box { flex: 1; min-width: 200px; position: relative; }
-.search-box svg {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: var(--text-muted);
-}
-.search-input { width: 100%; padding-left: 38px; }
 .select {
   padding: 9px 32px 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  outline: none;
   background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
   appearance: none;
   cursor: pointer;
 }
+.select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
 .list {
   padding: 8px;
   max-height: calc(100vh - 200px);
   overflow-y: auto;
 }
-.list::-webkit-scrollbar {
-  width: 6px;
-}
-.list::-webkit-scrollbar-track {
-  background: transparent;
-}
-.list::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
-.list::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
+.list::-webkit-scrollbar { width: 6px; }
+.list::-webkit-scrollbar-track { background: transparent; }
+.list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.list::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 .list-item {
   padding: 14px 16px;
   border-radius: var(--radius);
@@ -206,20 +181,6 @@ function toggleExpand(id: string) {
 }
 .list-item.expanded .item-detail { display: block; }
 .detail-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
-.detail-content {
-  background: #1e293b;
-  color: #e2e8f0;
-  padding: 12px;
-  border-radius: 6px;
-  font-family: 'SF Mono', Monaco, monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  overflow-x: auto;
-  max-height: 280px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
 .detail-section { margin-bottom: 12px; }
 .detail-section:last-child { margin-bottom: 0; }
 </style>
