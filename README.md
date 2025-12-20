@@ -6,11 +6,9 @@ A Vite plugin for monitoring network requests with built-in mock capabilities. P
 
 ## Screenshots
 
-### Network Monitor Panel
-![Network Monitor](./docs/images/network.png)
-
-### Mock Rules Management
-![Mock Rules](./docs/images/rules.png)
+| Network Monitor | Mock Rules | Mock.js Reference |
+|:---:|:---:|:---:|
+| ![Network Monitor](./docs/images/network.png) | ![Mock Rules](./docs/images/rules.png) | ![Mock Reference](./docs/images/mock-reference.png) |
 
 ## Features
 
@@ -20,6 +18,11 @@ A Vite plugin for monitoring network requests with built-in mock capabilities. P
 - 💾 Persistent mock rules across dev server restarts
 - ⏱️ Response delay simulation
 - 🔄 WebSocket-based real-time updates
+- 🎲 Mock.js integration for generating random data
+- 📝 Custom response headers support
+- 🔎 Request/Response body preview with syntax highlighting
+- 🏷️ Filter logs by method, URL, and mock status
+- ⚡ One-click mock creation from captured requests
 
 ## Installation
 
@@ -91,8 +94,42 @@ http://localhost:5173/__network_mock__
 | `method` | `string` | HTTP method (GET, POST, PUT, DELETE, etc.) |
 | `status` | `number` | HTTP status code to return |
 | `delay` | `number` | Response delay in milliseconds |
-| `response` | `any` | Mock response body (JSON) |
+| `response` | `any` | Mock response body (JSON, supports Mock.js syntax) |
+| `headers` | `object` | Custom response headers |
 | `enabled` | `boolean` | Enable/disable this rule |
+
+## Mock.js Support
+
+This plugin integrates [Mock.js](http://mockjs.com/) for generating random mock data. You can use Mock.js syntax in your response body:
+
+```json
+{
+  "code": 200,
+  "data": {
+    "list|10": [{
+      "id": "@id",
+      "name": "@cname",
+      "email": "@email",
+      "avatar": "@image('100x100')",
+      "createTime": "@datetime"
+    }],
+    "total": "@integer(100, 500)"
+  }
+}
+```
+
+Common Mock.js placeholders:
+- `@id` - Random ID
+- `@name` / `@cname` - English/Chinese name
+- `@email` - Email address
+- `@datetime` - Date and time
+- `@image` - Placeholder image URL
+- `@integer(min, max)` - Random integer
+- `@string(length)` - Random string
+- `@boolean` - Random boolean
+- `@paragraph` - Random paragraph
+
+The panel includes a built-in Mock.js reference guide for quick syntax lookup.
 
 ## How It Works
 
