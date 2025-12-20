@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-network-mock",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Vite plugin for monitoring network requests with built-in mock capabilities",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
